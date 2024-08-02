@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    body {
+      background: url('https://t4.ftcdn.net/jpg/05/69/21/75/360_F_569217527_O9eTUdEmBURUpxzawhBANGQfVPPPnBr8.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: #ffffff;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Roboto', sans-serif;
+    }
+    .overlay {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 2rem;
+      border-radius: 10px;
+      max-width: 800px;
+      margin: 2rem auto;
+      height: calc(100vh - 4rem);
+      overflow-y: auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin: 0;
+    }
+    h2 {
+      font-size: 2rem;
+    }
+    main {
+      padding: 1rem;
+    }
+    form {
+      margin-top: 2rem;
+    }
+    input[type="text"], select {
+      padding: 0.5rem;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      margin-bottom: 1rem;
+      width: calc(100% - 12px);
+    }
+    table {
+      margin-top: 2rem;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table th, table td {
+      text-align: center;
+      padding: 0.5rem;
+    }
+    table tr:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      transition: background 0.3s ease;
+    }
+    button.add {
+      background-color: #198754;
+      color: #fff;
+    }
+    button.delete {
+      background-color: #dc3545;
+      color: #fff;
+    }
+    button i {
+      margin-right: 0.5rem;
+    }
+    .dark-mode {
+      background-color: #2c2c2c;
+      color: #f5f5f5;
+    }
+    .tooltip {
+      position: relative;
+      display: inline-block;
+    }
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 120px;
+      background-color: #555;
+      color: #fff;
+      text-align: center;
+      border-radius: 5px;
+      padding: 5px 0;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%; /* Adjust to position tooltip */
+      left: 50%;
+      margin-left: -60px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+    #suggestions {
+      margin-top: 2rem;
+      color: #ffffff;
+    }
+  </style>
+  <title>Pantry Tracker</title>
+</head>
+<body>
+  <div class="overlay">
+    <header>
+      <h1>Pantry Tracker</h1>
+      <p>The perfect place to keep your goods in place!</p>
+    </header>
+    <main>
+      {% if not pantry.table %}
+      <h2>Start adding ingredients to track your pantry!</h2>
+      <form action="/add" method="post">
+        <fieldset>
+          <label for="name">
+            Item Name
+            <input type="text" id="name" name="name" placeholder="Food Item" required autofocus>
+          </label>
+          <label for="category">
+            Item Category
+            <select id="category" name="category" required>
+              <option value="" selected disabled>Pick an Item Category...</option>
+              <option value="baking-ingredients">Baking Ingredients</option>
+              <option value="beverages">Beverages</option>
+              <option value="breakfast-items">Breakfast Items</option>
+              <option value="canned-goods">Canned Goods</option>
+              <option value="condiments">Condiments</option>
+              <option value="dairy">Dairy</option>
+              <option value="dried-fruits">Dried Fruits</option>
+              <option value="frozen-fruits">Frozen Fruits</option>
+              <option value="frozen-vegetables">Frozen Vegetables</option>
+              <option value="fresh-fruits">Fresh Fruits</option>
+              <option value="fresh-vegetables">Fresh Vegetables</option>
+              <option value="grains">Grains</option>
+              <option value="legumes">Legumes</option>
+              <option value="meat-poultry">Meat & Poultry</option>
+              <option value="miscellaneous">Miscellaneous</option>
+              <option value="nuts-seeds">Nuts & Seeds</option>
+              <option value="oils-vinegars">Oils & Vinegars</option>
+              <option value="pasta">Pasta</option>
+              <option value="prepared-meals">Prepared Meals</option>
+              <option value="sauces">Sauces</option>
+              <option value="seafood">Seafood</option>
+              <option value="snacks">Snacks</option>
+              <option value="soups">Soups</option>
+              <option value="spices-herbs">Spices & Herbs</option>
+              <option value="specialty-items">Specialty Items</option>
+              <option value="sweeteners">Sweeteners</option>
+            </select>
+          </label>
+        </fieldset>
+        <input type="submit" value="Add!"/>
+      </form>
+      {% else %}
+      <h2>Current Pantry Items</h2>
+      <input type="text" id="search" placeholder="Search items..." onkeyup="searchItems()">
+      <div class="overflow-auto">
+        <table role="grid">
+          <thead>
+            <tr>
+              <th scope="col" onclick="sortTable(0)">Item Name</th>
+              <th scope="col" onclick="sortTable(1)">Type</th>
+              <th scope="col">Count</th>
+              <th scope="col">Add</th>
+              <th scope="col">Remove</th>
+            </tr>
+          </thead>
+          <tbody id="itemTable">
+            {% for item, count in pantry.table.items() %}
+            <tr>
+              <th scope="row">{{ item.name }}</th>
+              <td>{{ item.type }}</td>
+              <td>{{ count }}</td>
+              <td>
+                <button class="add tooltip" onclick="addItem('{{ item.name }}', '{{ item.type }}')">
+                  <i class="fas fa-plus"></i>
+                  <span class="tooltiptext">Add Item</span>
+                </button>
+              </td>
+              <td>
+                <button class="delete tooltip" onclick="deleteItem('{{ item.name }}', '{{ item.type }}')">
+                  <i class="fas fa-minus"></i>
+                  <span class="tooltiptext">Remove Item</span>
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <article>
+        <h2>Add a new item</h2>
+        <form action="/add" method="post">
+          <fieldset>
+            <label for="name">
+              Item Name
+              <input type="text" id="name" name="name" placeholder="Food Item" required>
+            </label>
+            <label for="category">
+              Item Category
+              <select id="category" name="category" required>
+                <option value="" selected disabled>Pick an Item Category...</option>
+                <option value="baking-ingredients">Baking Ingredients</option>
+                <option value="beverages">Beverages</option>
+                <option value="breakfast-items">Breakfast Items</option>
+                <option value="canned-goods">Canned Goods</option>
+                <option value="condiments">Condiments</option>
+                <option value="dairy">Dairy</option>
+                <option value="dried-fruits">Dried Fruits</option>
+                <option value="frozen-fruits">Frozen Fruits</option>
+                <option value="frozen-vegetables">Frozen Vegetables</option>
+                <option value="fresh-fruits">Fresh Fruits</option>
+                <option value="fresh-vegetables">Fresh Vegetables</option>
+                <option value="grains">Grains</option>
+                <option value="legumes">Legumes</option>
+                <option value="meat-poultry">Meat & Poultry</option>
+                <option value="miscellaneous">Miscellaneous</option>
+                <option value="nuts-seeds">Nuts & Seeds</option>
+                <option value="oils-vinegars">Oils & Vinegars</option>
+                <option value="pasta">Pasta</option>
+                <option value="prepared-meals">Prepared Meals</option>
+                <option value="sauces">Sauces</option>
+                <option value="seafood">Seafood</option>
+                <option value="snacks">Snacks</option>
+                <option value="soups">Soups</option>
+                <option value="spices-herbs">Spices & Herbs</option>
+                <option value="specialty-items">Specialty Items</option>
+                <option value="sweeteners">Sweeteners</option>
+              </select>
+            </label>
+          </fieldset>
+          <input type="submit" value="Add!"/>
+        </form>
+      </article>
+      {% endif %}
+    <h2>Enter Your Age</h2>
+        <input type="number" id="ageInput" placeholder="Enter your age" required>
+        <button onclick="submitAge()">Submit</button>
+      </article>
+      <div id="suggestions"></div>
+    </main>
+  </div>
+  <script>
+    function submitAge() {
+      const ageInput = document.getElementById('ageInput').value;
+      if (ageInput) {
+        displaySuggestions(parseInt(ageInput));
+      }
+    }
+
+    function displaySuggestions(age) {
+      const suggestionsDiv = document.getElementById('suggestions');
+      suggestionsDiv.innerHTML = ''; // Clear previous suggestions
+      let suggestions = '';
+
+      if (age >= 18 && age <= 25) {
+        suggestions += '<p>For ages 18-25, consider adding more protein and nutrients to your diet!</p>';
+      } else if (age >= 26 && age <= 35) {
+        suggestions += '<p>For ages 26-35, focus on a balanced diet rich in vitamins!</p>';
+      } else if (age >= 36 && age <= 45) {
+        suggestions += '<p>For ages 36-45, prioritize heart-healthy foods!</p>';
+      } else if (age >= 46 && age <= 60) {
+        suggestions += '<p>For ages 46-60, ensure sufficient fiber intake!</p>';
+      } else if (age > 60) {
+        suggestions += '<p>For ages above 60, focus on maintaining muscle mass and hydration!</p>';
+      } else {
+        suggestions += '<p>For children and teenagers, a well-rounded diet with calcium and vitamins is essential!</p>';
+      }
+
+      suggestionsDiv.innerHTML = suggestions;
+    }
+    async function addItem(name, type) {
+      await fetch(`/add/${name}/${type}`, {
+        method: 'POST',
+      });
+      location.reload();
+    }
+
+    async function deleteItem(name, type) {
+      await fetch(`/delete/${name}/${type}`, {
+        method: 'POST',
+      });
+      location.reload();
+    }
+
+    function searchItems() {
+      const filter = document.getElementById("search").value.toLowerCase();
+      const rows = document.querySelectorAll("#itemTable tr");
+      rows.forEach(row => {
+        const itemName = row.cells[0].textContent.toLowerCase();
+        row.style.display = itemName.includes(filter) ? "" : "none";
+      });
+    }
+
+    function sortTable(columnIndex) {
+      const table = document.getElementById("itemTable");
+      const rows = Array.from(table.rows);
+      const sortedRows = rows.sort((a, b) => {
+        const aText = a.cells[columnIndex].textContent.trim();
+        const bText = b.cells[columnIndex].textContent.trim();
+        return aText.localeCompare(bText);
+      });
+      sortedRows.forEach(row => table.appendChild(row));
+    }
+
+  </script>
+</body>
+</html>
